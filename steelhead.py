@@ -82,8 +82,8 @@ if __name__ == "__main__":
     if not options.input:
         options.input = "."
     files = [f for f in os.listdir(options.input) if path.isfile(f)]
-    print files
     for file in files:
-        if not search(r"\.~.+\.xls", file) and ".xls" in file:  # ignore temporary files
+        if not file.startswith('.') and ".xls" in file:  # ignore temporary files
+            print file
             data = DataFile(file)
             data.build_spreadsheet(data.find_spikes(), output_dir=options.output)
