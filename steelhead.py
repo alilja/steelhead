@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     if not options.input:
         options.input = "."
-    files = [f for f in os.listdir(options.input) if path.isfile(f)]
+    files = ["{0}/{1}".format(options.input, f) for f in os.listdir(options.input) if path.isfile("{0}/{1}".format(options.input, f))]
     for file in files:
         if not file.startswith('.') and ".xls" in file:  # ignore temporary files
             print file
