@@ -115,7 +115,9 @@ if __name__ == "__main__":
     parser.add_option(
         "-t",
         "--time",
-        help="The time to measure averages over."
+        help="The time to measure averages over.",
+        type="float",
+        default=15000
     )
     (options, args) = parser.parse_args()
 
@@ -127,7 +129,7 @@ if __name__ == "__main__":
         if not file.startswith('.') and ".xls" in file:  # ignore temporary files
 
             data = DataFile(file)
-            averages = data.find_averages(data.find_spikes())
+            averages = data.find_averages(data.find_spikes(), length=options.time)
             data.build_spreadsheet(
                 averages,
                 header="Timestamp, Compression Depth",
