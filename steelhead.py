@@ -41,6 +41,40 @@ class DataFile(object):
                 maxes.append((curr_row[DataFile.COL_DATA].value, curr_row[DataFile.COL_TIME].value))
         return time_series
 
+    def find_averages(self, time_series, length=15000):
+        all_averages = []
+        for data in time_series:
+            i = 0
+            time_data = [stamp for depth, stamp in data]
+            averages = []
+            while i < len(data):
+                target_time = time_data[i] + length
+                try:
+                    end = DataFile._find_closet_time(time_data[i:], target_time)
+                    average_section = data[i: i + end]
+                except IndexError:
+                    average_section = data[i: -1]
+
+
+                total = 0
+                for depth, stamp in average_section:
+                    total += depth
+                averages.append((average_section[0][1], total / len(average_section)))
+                i += end
+            all_averages.append(averages)
+        return all_averages
+
+
+    @staticmethod
+    def _find_closet_time(data, time):
+        for i, num in enumerate(data):
+            if num < time:
+                if data[i + 1] > time:
+                    return i
+            elif num == time:
+                return i
+
+
     def build_spreadsheet(self, time_series, header, output_dir=None):
         if not output_dir:
             output_dir = "output"
@@ -61,6 +95,7 @@ class DataFile(object):
 if __name__ == "__main__":
     from optparse import OptionParser
     from re import search
+    import pprint
 
     parser = OptionParser(usage="usage: %prog [options]")
     parser.add_option(
@@ -77,6 +112,11 @@ if __name__ == "__main__":
         help="The output directory where processed files"
         "should go."
     )
+    parser.add_option(
+        "-t",
+        "--time",
+        help="The time to measure averages over."
+    )
     (options, args) = parser.parse_args()
 
     print "\n\n\n"
@@ -87,8 +127,9 @@ if __name__ == "__main__":
         if not file.startswith('.') and ".xls" in file:  # ignore temporary files
 
             data = DataFile(file)
+            averages = data.find_averages(data.find_spikes())
             data.build_spreadsheet(
-                data.find_spikes(),
-                header="Compression Depth, Timestamp",
+                averages,
+                header="Timestamp, Compression Depth",
                 output_dir=options.output
             )
