@@ -37,24 +37,21 @@ class DataFile(object):
             prev_max = max([self.sheet.row(i - n - 1)[DataFile.COL_DATA].value for n in range(width)])
 
             if curr_row[DataFile.COL_DATA].value > prev_max and curr_row[DataFile.COL_DATA].value > next_max:
-                maxes.append((curr_row[DataFile.COL_DATA], curr_row[DataFile.COL_TIME]))
+                maxes.append((curr_row[DataFile.COL_DATA].value, curr_row[DataFile.COL_TIME].value))
         return time_series
 
-    def build_spreadsheet(self, time_series, output_dir=None):
+    def build_spreadsheet(self, time_series, header, output_dir=None):
         if not output_dir:
             output_dir = "output"
         total = len(time_series)
         for i, time in enumerate(time_series):
-            output = ["Compression Depth, Timestamp"]
+            output = [header]
             for data_row in time:
-                output.append(", ".join([
-                    str(data_row[DataFile.COL_DATA].value),
-                    str(data_row[DataFile.COL_TIME].value)
-                ]))
+                output.append(", ".join([str(item) for item in data_row]))
 
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-            filename = "{0}/{1}_{2}_{3}.csv".format(output_dir, self.filename, i, total)
+            filename = "{0}/{1}_{2}_{3}.csv".format(output_dir, self.filename, i + 1, total)
             with open(filename, "w") as f:
                 f.write("\n".join(output))
                 print "Outputted data to {0}.".format(filename)
@@ -62,6 +59,7 @@ class DataFile(object):
 if __name__ == "__main__":
     from optparse import OptionParser
     from re import search
+
     parser = OptionParser(usage="usage: %prog [options]")
     parser.add_option(
         "-i",
@@ -86,4 +84,8 @@ if __name__ == "__main__":
         if not file.startswith('.') and ".xls" in file:  # ignore temporary files
             print file
             data = DataFile(file)
-            data.build_spreadsheet(data.find_spikes(), output_dir=options.output)
+            data.build_spreadsheet(
+                data.find_spikes(),
+                header="Compression Depth, Timestamp",
+                output_dir=options.output
+            )
