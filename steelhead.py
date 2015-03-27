@@ -10,14 +10,15 @@ class DataFile(object):
     COL_TIME = 1
 
     def __init__(self, filename):
-        self.filename = filename[:filename.find(".")]
-
         print "Loading \"{0}\"".format(filename)
         workbook = xlrd.open_workbook(filename)
         try:
-            self.sheet = workbook.sheet_by_name([s for s in workbook.sheet_names() if "reduced" in s][0])
+            self.sheet = workbook.sheet_by_name([s for s in workbook.sheet_names()][1])
         except IndexError:
-            raise IndexError("Cannot find \"reduced\" worksheet.")
+            raise IndexError("Cannot find second worksheet.")
+
+        filename = path.basename(filename)
+        self.filename = filename[:filename.find(".")]
 
     def find_spikes(self, width=5):
         i = width
@@ -43,6 +44,7 @@ class DataFile(object):
     def build_spreadsheet(self, time_series, header, output_dir=None):
         if not output_dir:
             output_dir = "output"
+
         total = len(time_series)
         for i, time in enumerate(time_series):
             output = [header]
@@ -77,12 +79,13 @@ if __name__ == "__main__":
     )
     (options, args) = parser.parse_args()
 
+    print "\n\n\n"
     if not options.input:
         options.input = "."
     files = ["{0}/{1}".format(options.input, f) for f in os.listdir(options.input) if path.isfile("{0}/{1}".format(options.input, f))]
     for file in files:
         if not file.startswith('.') and ".xls" in file:  # ignore temporary files
-            print file
+
             data = DataFile(file)
             data.build_spreadsheet(
                 data.find_spikes(),
