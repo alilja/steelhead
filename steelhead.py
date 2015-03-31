@@ -30,8 +30,9 @@ class DataFile(object):
 
             # check to see if there's a break in the data
             next_time = self.sheet.row(i + 1)[DataFile.COL_TIME].value
-            if next_time - curr_row[DataFile.COL_TIME].value > 8000:
+            if next_time - curr_row[DataFile.COL_TIME].value > 5000:
                 time_series.append(maxes)
+                print len(time_series)
                 maxes = []
 
             next_max = max([self.sheet.row(i + n + 1)[DataFile.COL_DATA].value for n in range(width)])
@@ -39,6 +40,7 @@ class DataFile(object):
 
             if curr_row[DataFile.COL_DATA].value > prev_max and curr_row[DataFile.COL_DATA].value > next_max:
                 maxes.append((curr_row[DataFile.COL_DATA].value, curr_row[DataFile.COL_TIME].value))
+        time_series.append(maxes)
         return time_series
 
     def find_averages(self, time_series, length=15000):
@@ -59,9 +61,14 @@ class DataFile(object):
                 total = 0
                 for depth, stamp in average_section:
                     total += depth
-                averages.append(((average_section[0][1] - time_data[0])/ 1000, total / len(average_section)))
+
+                if len(average_section) == 0:
+                    break
+
+                averages.append((average_section[0][1], (average_section[0][1] - time_data[0])/ 1000, total / len(average_section)))
                 i += end
-            averages.append(((average_section[-1][1] - time_data[0])/ 1000, 0))
+
+            #averages.append((average_section[-1][1], (average_section[-1][1] - time_data[0])/ 1000, 0))
             all_averages.append(averages)
         return all_averages
 
@@ -128,11 +135,10 @@ if __name__ == "__main__":
     files = ["{0}/{1}".format(options.input, f) for f in os.listdir(options.input) if path.isfile("{0}/{1}".format(options.input, f))]
     for file in files:
         if not path.basename(file).startswith('.') and ".xls" in file:  # ignore temporary files
-            print file
             data = DataFile(file)
             averages = data.find_averages(data.find_spikes(), length=options.time)
             data.build_spreadsheet(
                 averages,
-                header="Timestamp, Compression Depth",
+                header="Timestamp, Time Since Cycle Start, Compression Depth",
                 output_dir=options.output
             )
