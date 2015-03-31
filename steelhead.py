@@ -59,8 +59,9 @@ class DataFile(object):
                 total = 0
                 for depth, stamp in average_section:
                     total += depth
-                averages.append((average_section[0][1], total / len(average_section)))
+                averages.append(((average_section[0][1] - time_data[0])/ 1000, total / len(average_section)))
                 i += end
+            averages.append(((average_section[-1][1] - time_data[0])/ 1000, 0))
             all_averages.append(averages)
         return all_averages
 
@@ -126,8 +127,8 @@ if __name__ == "__main__":
         options.input = "."
     files = ["{0}/{1}".format(options.input, f) for f in os.listdir(options.input) if path.isfile("{0}/{1}".format(options.input, f))]
     for file in files:
-        if not file.startswith('.') and ".xls" in file:  # ignore temporary files
-
+        if not path.basename(file).startswith('.') and ".xls" in file:  # ignore temporary files
+            print file
             data = DataFile(file)
             averages = data.find_averages(data.find_spikes(), length=options.time)
             data.build_spreadsheet(
