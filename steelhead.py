@@ -68,7 +68,7 @@ class DataFile(object):
                 averages.append((average_section[0][1], (average_section[0][1] - time_data[0])/ 1000, total / len(average_section)))
                 i += end
 
-            #averages.append((average_section[-1][1], (average_section[-1][1] - time_data[0])/ 1000, 0))
+            averages.append((average_section[-1][1], (average_section[-1][1] - time_data[0])/ 1000, 0))
             all_averages.append(averages)
         return all_averages
 
