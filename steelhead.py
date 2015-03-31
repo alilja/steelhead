@@ -82,10 +82,7 @@ class DataFile(object):
             elif num == time:
                 return i
 
-
     def build_spreadsheet(self, time_series, header, output_dir=None):
-        if not output_dir:
-            output_dir = "output"
 
         total = len(time_series)
         for i, time in enumerate(time_series):
@@ -93,12 +90,34 @@ class DataFile(object):
             for data_row in time:
                 output.append(", ".join([str(item) for item in data_row]))
 
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
-            filename = "{0}/{1}_{2}_{3}.csv".format(output_dir, self.filename, i + 1, total)
-            with open(filename, "w") as f:
-                f.write("\n".join(output))
-                print "Outputted data to {0}.".format(filename)
+        if not output_dir:
+            output_dir = "output"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        filename = "{0}/{1}_{2}_{3}.csv".format(output_dir, self.filename, i + 1, total)
+        with open(filename, "w") as f:
+            f.write("\n".join(output))
+            print "Outputted data to {0}.".format(filename)
+
+    def build_spreadsheet_all(self, time_series, header, output_dir):
+        output = [header]
+        for cycle in time_series:
+            for averages in cycle:
+                output.append(", ".join([str(item) for item in averages]))
+            output.append(","*len(averages))
+
+        if not output_dir:
+            output_dir = "output"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        filename = "{0}/{1}_ALL.csv".format(output_dir, self.filename,)
+        with open(filename, "w") as f:
+            f.write("\n".join(output))
+
+
+
+
+
 
 if __name__ == "__main__":
     from optparse import OptionParser
@@ -138,6 +157,12 @@ if __name__ == "__main__":
             data = DataFile(file)
             averages = data.find_averages(data.find_spikes(), length=options.time)
             data.build_spreadsheet(
+                averages,
+                header="Timestamp, Time Since Cycle Start, Compression Depth",
+                output_dir=options.output
+            )
+
+            data.build_spreadsheet_all(
                 averages,
                 header="Timestamp, Time Since Cycle Start, Compression Depth",
                 output_dir=options.output
