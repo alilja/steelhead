@@ -4,12 +4,14 @@ from os import path
 
 import xlrd
 
+from pprint import pprint
+
 
 class DataFile(object):
     COL_DATA = 0
     COL_TIME = 1
 
-    def __init__(self, filename):
+    def __init__(self, filename, verbose=False):
         print "Loading \"{0}\"".format(filename)
         workbook = xlrd.open_workbook(filename)
         try:
@@ -19,6 +21,8 @@ class DataFile(object):
 
         filename = path.basename(filename)
         self.filename = filename[:filename.find(".")]
+
+        self.verbose = verbose
 
     def find_spikes(self, width=5):
         i = width
@@ -30,9 +34,12 @@ class DataFile(object):
 
             # check to see if there's a break in the data
             next_time = self.sheet.row(i + 1)[DataFile.COL_TIME].value
-            if next_time - curr_row[DataFile.COL_TIME].value > 5000:
+            skip_check = next_time - curr_row[DataFile.COL_TIME].value
+            if skip_check > 100 and self.verbose:
+                print skip_check
+            if skip_check > 5000:
+                pprint(maxes)
                 time_series.append(maxes)
-                print len(time_series)
                 maxes = []
 
             next_max = max([self.sheet.row(i + n + 1)[DataFile.COL_DATA].value for n in range(width)])
@@ -41,6 +48,8 @@ class DataFile(object):
             if curr_row[DataFile.COL_DATA].value > prev_max and curr_row[DataFile.COL_DATA].value > next_max:
                 maxes.append((curr_row[DataFile.COL_DATA].value, curr_row[DataFile.COL_TIME].value))
         time_series.append(maxes)
+        if self.verbose:
+            pprint(maxes)
         return time_series
 
     def find_averages(self, time_series, length=15000):
@@ -86,18 +95,20 @@ class DataFile(object):
 
         total = len(time_series)
         for i, time in enumerate(time_series):
+            if self.verbose:
+                pprint(time)
             output = [header]
             for data_row in time:
                 output.append(", ".join([str(item) for item in data_row]))
 
-        if not output_dir:
-            output_dir = "output"
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        filename = "{0}/{1}_{2}_{3}.csv".format(output_dir, self.filename, i + 1, total)
-        with open(filename, "w") as f:
-            f.write("\n".join(output))
-            print "Outputted data to {0}.".format(filename)
+            if not output_dir:
+                output_dir = "output"
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            filename = "{0}/{1}_{2}_{3}.csv".format(output_dir, self.filename, i + 1, total)
+            with open(filename, "w") as f:
+                f.write("\n".join(output))
+                print "Outputted data to {0}.".format(filename)
 
     def build_spreadsheet_all(self, time_series, header, output_dir):
         output = [header]
@@ -122,7 +133,6 @@ class DataFile(object):
 if __name__ == "__main__":
     from optparse import OptionParser
     from re import search
-    import pprint
 
     parser = OptionParser(usage="usage: %prog [options]")
     parser.add_option(
@@ -154,7 +164,7 @@ if __name__ == "__main__":
     files = ["{0}/{1}".format(options.input, f) for f in os.listdir(options.input) if path.isfile("{0}/{1}".format(options.input, f))]
     for file in files:
         if not path.basename(file).startswith('.') and ".xls" in file:  # ignore temporary files
-            data = DataFile(file)
+            data = DataFile(file, True)
             averages = data.find_averages(data.find_spikes(), length=options.time)
             data.build_spreadsheet(
                 averages,
