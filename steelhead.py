@@ -35,12 +35,10 @@ class DataFile(object):
             # check to see if there's a break in the data
             next_time = self.sheet.row(i + 1)[DataFile.COL_TIME].value
             skip_check = next_time - curr_row[DataFile.COL_TIME].value
-            if skip_check > 100 and self.verbose:
-                print skip_check
             if skip_check > 5000:
-                pprint(maxes)
-                time_series.append(maxes)
-                maxes = []
+                if maxes != []:
+                    time_series.append(maxes)
+                    maxes = []
 
             next_max = max([self.sheet.row(i + n + 1)[DataFile.COL_DATA].value for n in range(width)])
             prev_max = max([self.sheet.row(i - n - 1)[DataFile.COL_DATA].value for n in range(width)])
@@ -48,13 +46,12 @@ class DataFile(object):
             if curr_row[DataFile.COL_DATA].value > prev_max and curr_row[DataFile.COL_DATA].value > next_max:
                 maxes.append((curr_row[DataFile.COL_DATA].value, curr_row[DataFile.COL_TIME].value))
         time_series.append(maxes)
-        if self.verbose:
-            pprint(maxes)
         return time_series
 
     def find_averages(self, time_series, length=15000):
         all_averages = []
         for data in time_series:
+            print data
             i = 0
             time_data = [stamp for depth, stamp in data]
             averages = []
@@ -76,9 +73,10 @@ class DataFile(object):
 
                 averages.append((average_section[0][1], (average_section[0][1] - time_data[0])/ 1000, total / len(average_section)))
                 i += end
-
-            averages.append((average_section[-1][1], (average_section[-1][1] - time_data[0])/ 1000, 0))
+            if len(average_section) > 0:
+                averages.append((average_section[-1][1], (average_section[-1][1] - time_data[0])/ 1000, 0))
             all_averages.append(averages)
+            print "="*60
         return all_averages
 
 
@@ -95,8 +93,6 @@ class DataFile(object):
 
         total = len(time_series)
         for i, time in enumerate(time_series):
-            if self.verbose:
-                pprint(time)
             output = [header]
             for data_row in time:
                 output.append(", ".join([str(item) for item in data_row]))
@@ -165,7 +161,9 @@ if __name__ == "__main__":
     for file in files:
         if not path.basename(file).startswith('.') and ".xls" in file:  # ignore temporary files
             data = DataFile(file, True)
-            averages = data.find_averages(data.find_spikes(), length=options.time)
+            average_data = data.find_spikes()
+            pprint(average_data)
+            averages = data.find_averages(average_data, length=options.time)
             data.build_spreadsheet(
                 averages,
                 header="Timestamp, Time Since Cycle Start, Compression Depth",
